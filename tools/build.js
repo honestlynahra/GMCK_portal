@@ -36,7 +36,7 @@ ${FONT_LINK}
     <div class="splash-symbol">Healthcare &bull; Education &bull; Research</div>
     <div class="splash-loader"></div>
   </div>
-  <main class="site-body" id="sitebody">${content}</main>
+  <main class="site-body" id="sitebody">${content}${PROTOTYPE_NOTICE}</main>
   ${bottomNav}
   <div class="fabwrap">
     <button class="bn-fab bn-fab-loc" id="bnmap" type="button" onclick="mapLoc()" title="Find my location" aria-label="Find my location"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="1.5" fill="#fff"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>
@@ -56,6 +56,7 @@ ${FONT_LINK}
 
 // small helpers reused across pages
 const SHIELD = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 4v5c0 4.5-3 8-7 9-4-1-7-4.5-7-9V7l7-4z"/></svg>';
+const PROTOTYPE_NOTICE = '<footer class="site-footer"><div class="sf-title">Prototype Notice</div><p>This website is a student-developed prototype created for demonstration purposes. It is not an official website or communication channel of Government Medical College, Kozhikode. Official adoption and use are subject to approval by the institution.</p></footer>';
 const HEART = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 8c0 4-8 12-8 12S4 12 4 8a5 5 0 0 1 9-3 5 5 0 0 1 7 3z"/></svg>';
 const PIN = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>';
 const CAL = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M9 15h6M12 12v6"/></svg>';
