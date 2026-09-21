@@ -15,11 +15,14 @@ import sqlite3
 
 from flask import Flask, g, jsonify, request, send_from_directory, session
 from werkzeug.security import check_password_hash, generate_password_hash
+from werkzeug.utils import secure_filename
 
 SERVER = os.path.dirname(os.path.abspath(__file__))
 SITE = os.path.abspath(os.path.join(SERVER, ".."))
 DB_PATH = os.path.join(SERVER, "data", "gmc.db")
 KEY_FILE = os.path.join(SERVER, ".secret_key")
+POSTER_DIR = os.path.join(SITE, "assets", "img", "events")
+ALLOWED_IMAGE_EXT = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
 
 app = Flask(__name__, static_folder=None)
 if os.path.exists(KEY_FILE):
@@ -84,15 +87,16 @@ def index():
 @app.route("/<path:path>")
 def site_files(path):
     if path.startswith("assets/"):
-        return send_from_directory(os.path.join(SITE, "assets"), path[len("assets/"):])
+        resp = send_from_directory(os.path.join(SITE, "assets"), path[len("assets/"):])
+        resp.headers["Cache-Control"] = "no-cache"
+        return resp
     candidate = path
     if path.endswith("/"):
         candidate = path + "index.html"
     target = os.path.normpath(os.path.join(SITE, candidate))
     if target.startswith(SITE) and os.path.isfile(target):
         resp = send_from_directory(SITE, candidate)
-        if candidate.endswith(".html"):
-            resp.headers["Cache-Control"] = "no-cache"
+        resp.headers["Cache-Control"] = "no-cache"
         return resp
     return jsonify({"error": "Not found"}), 404
 
@@ -125,6 +129,7 @@ def bootstrap():
         "doctors": fetch("doctors"),
         "notices": fetch("notices"),
         "notifications": fetch("notifications"),
+        "events": fetch("events"),
         "opd": opd,
         "emergency": row_to_dict(em) if em else {},
         "auth": (lambda u: {"logged_in": bool(u), "username": u["username"] if u else None})(current_user()),
@@ -182,6 +187,7 @@ RESOURCES = {
     "departments": ("departments", ["name", "desc", "cat", "loc", "opd", "services"]),
     "doctors": ("doctors", ["name", "des", "dept", "spec"]),
     "notices": ("notices", ["title", "category", "cat_class", "date", "summary"]),
+    "events": ("events", ["title", "category", "cat_class", "date", "venue", "time", "summary", "poster"]),
     "notifications": ("notifications", ["title", "body", "icon_bg", "icon_col", "time", "unread"]),
     "opd": ("opd", ["dept", "day", "session", "info", "available"]),
 }
@@ -279,6 +285,41 @@ def emergency_admin():
     return jsonify({"ok": True})
 
 
+@app.route("/api/admin/events/<int:eid>/poster", methods=["POST", "DELETE"])
+@login_required
+def upload_event_poster(eid):
+    db = get_db()
+    row = db.execute("SELECT poster FROM events WHERE id=?", (eid,)).fetchone()
+    if not row:
+        return jsonify({"error": "Event not found"}), 404
+    if request.method == "DELETE":
+        cur = row["poster"] or ""
+        db.execute("UPDATE events SET poster='' WHERE id=?", (eid,))
+        db.commit()
+        if cur.startswith("/assets/img/events/"):
+            target = os.path.join(POSTER_DIR, os.path.basename(cur))
+            if os.path.isfile(target) and os.path.dirname(os.path.basename(cur)) == "":
+                try:
+                    os.remove(target)
+                except OSError:
+                    pass
+        return jsonify({"ok": True})
+    f = request.files.get("poster")
+    if not f or not f.filename:
+        return jsonify({"error": "No file provided"}), 400
+    ext = os.path.splitext(f.filename)[1].lower()
+    if ext not in ALLOWED_IMAGE_EXT:
+        return jsonify({"error": "Only image files are allowed"}), 400
+    name = secure_filename(f.filename) or "poster"
+    os.makedirs(POSTER_DIR, exist_ok=True)
+    fname = f"{eid}_{name}"
+    f.save(os.path.join(POSTER_DIR, fname))
+    url = "/assets/img/events/" + fname
+    db.execute("UPDATE events SET poster=? WHERE id=?", (url, eid))
+    db.commit()
+    return jsonify({"ok": True, "poster": url}), 201
+
+
 @app.route("/api/admin/password", methods=["POST"])
 @login_required
 def change_password():
@@ -293,6 +334,63 @@ def change_password():
     get_db().execute("UPDATE users SET password_hash=? WHERE id=?",
                      (generate_password_hash(new), u["id"]))
     get_db().commit()
+    return jsonify({"ok": True})
+
+
+# ---------------------------------------------------------------- admin users
+@app.route("/api/admin/users", methods=["GET", "POST"])
+@login_required
+def users_admin():
+    db = get_db()
+    if request.method == "GET":
+        rows = [dict(r) for r in db.execute(
+            "SELECT id, username, role, created_at FROM users ORDER BY id").fetchall()]
+        return jsonify(rows)
+    data = request.get_json(silent=True) or {}
+    username = (data.get("username") or "").strip()
+    password = data.get("password") or ""
+    role = (data.get("role") or "admin").strip() or "admin"
+    if len(username) < 3:
+        return jsonify({"error": "Username must be at least 3 characters"}), 400
+    if len(password) < 6:
+        return jsonify({"error": "Password must be at least 6 characters"}), 400
+    try:
+        db.execute("INSERT INTO users(username, password_hash, role) VALUES (?,?,?)",
+                   (username, generate_password_hash(password), role))
+        db.commit()
+    except sqlite3.IntegrityError:
+        return jsonify({"error": "Username already exists"}), 400
+    return jsonify({"ok": True}), 201
+
+
+@app.route("/api/admin/users/<int:uid>", methods=["PUT", "DELETE"])
+@login_required
+def user_update_delete(uid):
+    db = get_db()
+    me = current_user()
+    row = db.execute("SELECT * FROM users WHERE id=?", (uid,)).fetchone()
+    if not row:
+        return jsonify({"error": "User not found"}), 404
+    if request.method == "DELETE":
+        if uid == me["id"]:
+            return jsonify({"error": "You cannot delete your own account"}), 400
+        count = db.execute("SELECT COUNT(*) AS c FROM users").fetchone()["c"]
+        if count <= 1:
+            return jsonify({"error": "Cannot delete the only admin account"}), 400
+        db.execute("DELETE FROM users WHERE id=?", (uid,))
+        db.commit()
+        return jsonify({"ok": True})
+    data = request.get_json(silent=True) or {}
+    new_pw = data.get("password") or ""
+    role = (data.get("role") or row["role"]).strip() or "admin"
+    if new_pw and len(new_pw) < 6:
+        return jsonify({"error": "Password must be at least 6 characters"}), 400
+    if new_pw:
+        db.execute("UPDATE users SET password_hash=?, role=? WHERE id=?",
+                   (generate_password_hash(new_pw), role, uid))
+    else:
+        db.execute("UPDATE users SET role=? WHERE id=?", (role, uid))
+    db.commit()
     return jsonify({"ok": True})
 
 

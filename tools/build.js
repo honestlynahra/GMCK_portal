@@ -29,7 +29,13 @@ ${FONT_LINK}
 </head>
 <body id="${bodyId}"${tab ? ' data-tab="' + tab + '"' : ''}>
 <div class="frame">
-  <div class="statusbar" id="statusbar"></div>
+  <div id="splash">
+    <div class="splash-logo">${SHIELD}</div>
+    <div class="splash-title">GMC KOZHIKODE</div>
+    <div class="splash-sub">Government Medical College, Kozhikode</div>
+    <div class="splash-symbol">Healthcare &bull; Education &bull; Research</div>
+    <div class="splash-loader"></div>
+  </div>
   <main class="site-body" id="sitebody">${content}</main>
   ${bottomNav}
   <div class="fabwrap">
@@ -63,6 +69,7 @@ const AMB = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-lineca
 const BLDG = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V10l7-6 7 6v11"/></svg>';
 const CAP = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 22h20M4 22V8l8-5 8 5v14M9 22v-6h6v6"/></svg>';
 const TESTICON = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3"/><path d="M8 14h8"/></svg>';
+const MEGAPHONE = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-5v12L3 13v-2z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>';
 
 function appbarBack(title, sub, rightHTML) {
   return '<header class="appbar"><div class="appbar-row">' +
@@ -86,16 +93,10 @@ const home = shell({
   tab: 'home',
   title: 'Home',
   content: `
-    <div id="splash">
-      <div class="splash-logo">${SHIELD}</div>
-      <div class="splash-title">GMC KOZHIKODE</div>
-      <div class="splash-sub">Government Medical College, Kozhikode</div>
-      <div class="splash-symbol">Healthcare &bull; Education &bull; Research</div>
-      <div class="splash-loader"></div>
-    </div>
     <div class="greet-block">
       <div class="greet-top">
         <span class="grow"></span>
+        <a class="greet-admin" href="/admin/" title="Admin console">Admin login</a>
       </div>
       <div class="greet-title" id="greetHello">Welcome to GMC Kozhikode</div>
       <div class="greet-help">How can we help you?</div>
@@ -105,8 +106,6 @@ const home = shell({
       <input placeholder="Search department, doctor or service" readonly>
     </a>
     <div class="spacer"></div>
-    ${emergencyCard()}
-    <div class="spacer"></div>
     <div class="sec"><h2>Quick Services</h2></div>
     <div class="grid2">
       <a class="svc" href="doctors.html"><div class="svc-ic" style="background:var(--primary-light);color:var(--primary)">${'<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M8 2h8v6a4 4 0 0 1-8 0V2z"/><path d="M8 6h8M8 10c0-1 0-1 .5-2M16 10c0-1 0-1-.5-2"/></svg>'}</div><div class="svc-t">Doctor's Directory</div></a>
@@ -114,6 +113,7 @@ const home = shell({
       <a class="svc" href="departments.html"><div class="svc-ic" style="background:#F0EBFA;color:#6B4FA0">${'<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V8l9-5 9 5v13M9 21v-6h6v6"/><path d="M3 3v3M21 3v3"/></svg>'}</div><div class="svc-t">Departments</div></a>
       <a class="svc" href="navigation.html"><div class="svc-ic" style="background:#FDF1E3;color:#B7791F">${PIN}</div><div class="svc-t">Hospital Navigation</div></a>
       <a class="svc" href="admissions.html"><div class="svc-ic" style="background:#E8F6EF;color:#1E7A4D">${'<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4v5c0 5-3.5 8.5-8 9-4.5-.5-8-4-8-9V7l8-4z"/><path d="M9 12l2 2 4-4"/></svg>'}</div><div class="svc-t">Admissions</div></a>
+      <a class="svc" href="events.html"><div class="svc-ic" style="background:#FDEAF4;color:#C2255C">${MEGAPHONE}</div><div class="svc-t">College Events</div></a>
     </div>
     <div class="sec"><h2>How can we help you?</h2></div>
     <div class="chips">
@@ -477,21 +477,40 @@ const map = shell({
 });
 
 /* ============================================================
+   WELCOME — welcome.html  (first-visit onboarding entry)
+   ============================================================ */
+const welcome = shell({
+  file: 'welcome.html',
+  bodyId: 'page-welcome',
+  title: 'Welcome',
+  content: `
+    <div class="welcome-bleed">
+      <div class="welcome-fade"></div>
+      <div class="welcome-inner">
+        <img class="welcome-badge" src="assets/img/GMC-Kozhikode.webp" alt="GMC Kozhikode">
+        <div class="welcome-eyebrow">GOVERNMENT MEDICAL COLLEGE</div>
+        <div class="welcome-name">KOZHIKODE</div>
+        <div class="welcome-tag">GMC KOZHIKODE</div>
+        <div class="welcome-tagline">&ldquo;One Home for GMC Kozhikode&rdquo;</div>
+        <div class="welcome-meta">Healthcare &bull; Education &bull; Research</div>
+      </div>
+      <button class="welcome-cta" type="button" onclick="startOnboarding()">Continue</button>
+    </div>`
+});
+
+/* ============================================================
    LANGUAGE SELECTION — language.html
    ============================================================ */
-const GLOBE = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 4 9 15 15 0 0 1-4 9 15 15 0 0 1-4-9 15 15 0 0 1 4-9z"/></svg>';
-const BUILDING = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18M3 22h18M14 6h.01M14 10h.01M14 14h.01M10 6h.01M10 10h.01M10 14h.01"/></svg>';
+const GLOBE = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>';
 
 const langpage = shell({
   file: 'language.html',
   bodyId: 'page-language',
   title: 'Language',
   content: `
-    <div class="lang-bleed gradient-language">
-      <div class="welcome-logo">${BUILDING}</div>
-      <h1 class="lang-title">Welcome to GMC Kozhikode</h1>
-      <div id="langCards" class="lang-cards">
-        <p class="lang-sub">Choose your preferred language to continue</p>
+    ${appbarBack('Choose Your Language', 'Select your preferred language to continue', '')}
+    <div class="lang-body">
+      <div id="langCards" class="lang-pick">
         <div class="lang-card" onclick="pickLang('en')">
           <div class="lang-ic">${GLOBE}</div>
           <div><div class="lang-t">English</div><div class="lang-s">Continue in English</div></div>
@@ -591,6 +610,19 @@ const academics = shell({
 });
 
 /* ============================================================
+   COLLEGE EVENTS — events.html
+   ============================================================ */
+const collegeevents = shell({
+  file: 'events.html',
+  bodyId: 'page-events',
+  title: 'College Events',
+  content: `
+    ${appbarBack('College Events', null, '<div class="grow" style="display:none"></div>')}
+    <div class="sample-banner" style="margin-top:12px">${'<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>'}Placeholder events. Add official college event details via the admin console.</div>
+    <div id="eventsList" style="padding-top:4px;"></div>`
+});
+
+/* ============================================================
    ACADEMIC CALENDAR — academiccal.html (bonus)
    ============================================================ */
 const academiccal = shell({
@@ -657,7 +689,7 @@ const notifications = shell({
 });
 
 /* ---------- write ---------- */
-const pages = [home, hospital, search, notices, profile, emergency, departments, department, doctors, doctor, opd, appointment, navigation, map, langpage, tests, testdetail, admissions, academics, academiccal, library, student, notifications];
+const pages = [home, hospital, search, notices, profile, emergency, departments, department, doctors, doctor, opd, appointment, navigation, map, welcome, langpage, tests, testdetail, admissions, academics, academiccal, library, student, notifications, collegeevents];
 
 for (const p of pages) {
   const dest = path.join(OUT, p.file);

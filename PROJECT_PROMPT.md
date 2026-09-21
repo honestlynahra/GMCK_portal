@@ -26,10 +26,10 @@ Build a smartphone-style "one home" app for GMC Kozhikode: a multi-page mobile w
 
 | Task | Command |
 |---|---|
-| Rebuild all static pages | `node tools/build.js` (writes 22 pages at project root) |
+| Rebuild all static pages | `node tools/build.js` (writes 24 pages at project root) |
 | Seed SQLite DB (once) | `python server/init_db.py` → creates `server/data/gmc.db`, default admin `admin / admin123` |
 | Run server | `python server/app.py` (binds `0.0.0.0:5000`, serves site root + API + admin) |
-| Front-end validation | `node C:\Users\LOQ\AppData\Local\Temp\opencode\gmcksite\validate.js` (jsdom, 210 checks) |
+| Front-end validation | `node C:\Users\LOQ\AppData\Local\Temp\opencode\gmcksite\validate.js` (jsdom, 238 checks) |
 | API integration test | `powershell -ExecutionPolicy Bypass -File C:\Users\LOQ\AppData\Local\Temp\opencode\gmcksite\integration.ps1` (33 checks) |
 | Visual check | Headless Chrome screenshot, see "Validation" below |
 
@@ -41,7 +41,7 @@ Flask is installed. If the jsdom `node_modules` under `Temp\opencode\gmcksite` i
 
 ```
 C:\Users\LOQ\GMCK_Hospital_App\
-├── index.html ... notifications.html   # 22 generated pages (do NOT hand-edit; rebuild)
+├── index.html ... notifications.html   # 24 generated pages (do NOT hand-edit; rebuild)
 ├── tools\build.js                      # page generator — the "source" for static HTML
 ├── assets\
 │   ├── css\gmc.css                     # design system (see §6)
@@ -55,14 +55,16 @@ C:\Users\LOQ\GMCK_Hospital_App\
 └── out\                                # unused placeholder — ignore
 ```
 
-The **22 pages** (file → page): index(home), hospital, search, notices, profile, emergency, departments, department(detail via `?dept=`), doctors, doctor(detail via `?name=`), opd, appointment, navigation, map, tests, test(detail via `?title=`), admissions, academics, academiccal, library, student, notifications.
+The **24 pages** (file → page): index(home), hospital, search, notices, profile, emergency, departments, department(detail via `?dept=`), doctors, doctor(detail via `?name=`), opd, appointment, navigation, map, welcome, language, tests, test(detail via `?title=`), admissions, academics, academiccal, library, student, notifications.
+
+**First-visit onboarding**: root URL → **Welcome screen** (`welcome.html`, background = faded GMC logo image) → **Continue** → **Language selection** (`language.html`, "Choose Your Language") → pick a language → **existing Home** (`index.html`). Gate logic lives in `gmc.js`: boot redirects every page to `welcome.html` until `localStorage.gmc_onboard === '1'` (set by `pickLang()` along with `gmc_lang`); `welcome.html` and `language.html` are exempt. Returning users with `gmc_onboard` set go straight to Home. Both onboarding screens hide the FABs.
 
 ---
 
 ## 5. Runtime behaviour (`assets/js/gmc.js`)
 
 Boot sequence (flower of the app):
-1. `document.addEventListener('DOMContentLoaded')` → `bootShell()` → `runPageInit()` → `initData()`.
+1. `document.addEventListener('DOMContentLoaded')` → `bootShell()`, then the **onboarding gate** (redirect to `welcome.html` unless `gmc_onboard` set or the page is `welcome.html`/`language.html`), then `runPageInit()` → `initData()`.
 2. `bootShell()` injects: status bar clock, bottom nav (only on the 5 main tab pages), EMERGENCY FAB + **MAP FAB** (see §8), and calls `initEmergency()` on the emergency page.
 3. `runPageInit()` renders with current data (sample data sync first).
 4. `initData()` fires an async XHR `GET /api/bootstrap`; **on success it re-renders the page in place** with real DB data. Render code writes via `innerHTML =` (idempotent). The only guarded spot is `initAppointment()` (resets the `<select>` and uses a `_submitBound` flag before binding the submit listener). If the XHR fails/404s (offline, `file://`, jsdom), the sample data render simply stays.
@@ -112,7 +114,9 @@ SQLite schema (`server/schema.sql`): users, departments, doctors, notices, opd, 
 ## 9. Current feature state
 
 Done:
-- 22 generated pages; home/hospital grids show: Hospital Navigation, Doctor's Directory, OPD Schedule, Departments, Admissions (Book Appointment and Tests & Reports cards were REMOVED on request; underlying pages `appointment.html`/`tests.html` still exist).
+- 24 generated pages; home/hospital grids show: Hospital Navigation, Doctor's
+Directory, OPD Schedule, Departments, Admissions (Book Appointment and Tests & Reports cards were REMOVED on request;
+underlying pages `appointment.html`/`tests.html` still exist).
 - Backend + seeded DB + admin console (login → tabs: Departments, Doctors, Notices, OPD, Notifications, Appointments, Emergency, Settings; modal CRUD; appointment status; emergency phone/helpdesk; password change). Admin reachable from profile → "Admin Console".
 - All validation green: jsdom 210/210; API integration 33/33.
 

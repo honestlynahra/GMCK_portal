@@ -22,6 +22,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .l-input{width:100%;font-family:var(--font);font-size:14.5px;color:var(--text);background:var(--card);
   border:1.5px solid var(--line);border-radius:var(--radius);padding:12px 14px;outline:none;box-shadow:var(--shadow);}
 .l-input:focus{border-color:var(--primary);}
+.l-hint{font-size:12px;color:var(--mild);margin:6px 2px 2px;line-height:1.4;}
+.thumb{width:46px;height:46px;object-fit:cover;border-radius:8px;display:block;}
+.mild{color:var(--mild);}
 .l-err{color:var(--danger);font-size:12.5px;font-weight:600;min-height:18px;margin-top:8px;}
 .l-err.ok{color:var(--teal);}
 .l-btn{width:100%;margin-top:6px;padding:13px;border:none;border-radius:var(--radius);
@@ -52,6 +55,11 @@ main{padding:22px;}
 .btn.new{background:var(--teal);border-color:var(--teal);color:#fff;}
 .btn.save{background:var(--primary);border-color:var(--primary);color:#fff;}
 .btn.danger{background:var(--danger);border-color:var(--danger);color:#fff;}
+.btn.ghost{background:var(--card);border-color:var(--line);color:var(--primary);}
+
+/* ---------- events poster status ---------- */
+.events-msg{font-size:12.5px;font-weight:600;color:var(--teal);min-height:18px;}
+.events-msg.err{color:var(--danger);}
 
 /* ---------- tables ---------- */
 .grid{width:100%;border-collapse:collapse;background:var(--card);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);}

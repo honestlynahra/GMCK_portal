@@ -67,6 +67,21 @@ NOTIFICATIONS = [
     ("Emergency announcement", "Emergency drill scheduled this week.", "var(--danger-light)", "var(--danger)", "3d ago", 0),
 ]
 
+EVENTS = [
+    ("Annual Medical Freshers' Fest", "Cultural", "cat-adm", "12 Nov 2026", "Main Auditorium", "5:00 PM",
+     "Welcome cultural programme for the new first-year batch."),
+    ("Research Colloquium", "Academic", "cat-acad", "18 Nov 2026", "Seminar Hall", "10:00 AM",
+     "Postgraduate students and faculty present ongoing research work."),
+    ("Health Awareness Camp", "Community", "cat-emo", "25 Nov 2026", "OPD Block", "9:00 AM",
+     "Free screening and awareness sessions for the public."),
+    ("Inter-College Sports Meet", "Sports", "cat-exam", "5 Dec 2026", "College Ground", "8:00 AM",
+     "Annual sports meet across batches and participating colleges."),
+    ("National Seminar on Public Health", "Academic", "cat-acad", "12 Dec 2026", "Convention Centre", "9:30 AM",
+     "Guest lectures and panel discussions with invited speakers."),
+    ("Arts Day", "Cultural", "cat-adm", "20 Dec 2026", "College Auditorium", "4:00 PM",
+     "Student arts and cultural performances to close the year."),
+]
+
 OPD_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 OPD_COUNTS = {  # day, morning doctors, afternoon doctors
     "Monday": (4, 3), "Tuesday": (4, 3), "Wednesday": (5, 3),
@@ -80,6 +95,12 @@ def main():
         schema = f.read()
     with sqlite3.connect(DB_PATH) as con:
         con.executescript(schema)
+
+        # migrations for existing databases
+        event_cols = [r[1] for r in con.execute("PRAGMA table_info(events)").fetchall()]
+        if "poster" not in event_cols:
+            con.execute("ALTER TABLE events ADD COLUMN poster TEXT NOT NULL DEFAULT ''")
+            print("Added events.poster column (migration)")
 
         admin = con.execute("SELECT COUNT(*) FROM users").fetchone()[0]
         if admin == 0:
@@ -102,6 +123,11 @@ def main():
             con.executemany(
                 "INSERT INTO notifications(title, body, icon_bg, icon_col, time, unread) VALUES (?,?,?,?,?,?)",
                 NOTIFICATIONS,
+            )
+        if con.execute("SELECT COUNT(*) FROM events").fetchone()[0] == 0:
+            con.executemany(
+                "INSERT INTO events(title, category, cat_class, date, venue, time, summary) VALUES (?,?,?,?,?,?,?)",
+                EVENTS,
             )
         if con.execute("SELECT COUNT(*) FROM opd").fetchone()[0] == 0:
             rows = []

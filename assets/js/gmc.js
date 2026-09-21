@@ -26,12 +26,34 @@ function toast(msg){
   clearTimeout(toast._t); toast._t = setTimeout(function(){ el.classList.remove('show'); }, 2300);
 }
 
-/* ---------- boot: injects status bar, bottom nav, emergency FAB, toast ---------- */
+/* site-wide loading screen: fade out and remove */
+function hideSplash(){
+  var sp = document.getElementById('splash');
+  if(!sp) return;
+  sp.classList.add('hide');
+  setTimeout(function(){ if(sp && sp.parentNode) sp.parentNode.removeChild(sp); }, 500);
+}
+
+/* the loading screen plays once per session, on the first site load only */
+function initSplash(){
+  var sp = document.getElementById('splash');
+  if(!sp) return;
+  var first = false;
+  try{ first = sessionStorage.getItem('gmc_splash_once') !== '1'; }catch(e){}
+  if(!first){ sp.style.display = 'none'; return; }
+  try{ sessionStorage.setItem('gmc_splash_once', '1'); }catch(e){}
+}
+
+/* ---------- boot: injects bottom nav, emergency FAB, toast ---------- */
 document.addEventListener('DOMContentLoaded', function(){
   bootShell();
 
-  if(document.body.id !== 'page-language' && !getLang()){
-    location.replace('language.html');
+  /* loading screen: show only on the first site load this session */
+  initSplash();
+
+  /* first-visit onboarding: until language is chosen, direct every page to Welcome */
+  if(document.body.id !== 'page-welcome' && document.body.id !== 'page-language' && !getOnboard()){
+    location.replace('welcome.html');
     return;
   }
 
@@ -41,23 +63,11 @@ document.addEventListener('DOMContentLoaded', function(){
 
 function getLang(){ try{ return localStorage.getItem('gmc_lang'); }catch(e){ return null; } }
 function setLang(c){ try{ localStorage.setItem('gmc_lang', c); }catch(e){} }
+function getOnboard(){ try{ return localStorage.getItem('gmc_onboard'); }catch(e){ return null; } }
+function setOnboard(){ try{ localStorage.setItem('gmc_onboard', '1'); }catch(e){} }
 
-/* injects the shared chrome (status bar, bottom nav, FAB) */
+/* injects the shared chrome (bottom nav, FAB) */
 function bootShell(){
-  /* status bar */
-  var sb = document.getElementById('statusbar');
-  if(sb){
-    var d = new Date(), h = d.getHours(), mm = d.getMinutes();
-    var time = (h % 12 || 12) + ':' + (mm < 10 ? '0' : '') + mm;
-    sb.innerHTML =
-      '<span id="sb-time">' + time + '</span>' +
-      '<span class="sb-right">' +
-        '<svg viewBox="0 0 24 24"><path d="M1 8c5-4 17-4 22 0l-2 2c-4.5-3-13.5-3-18 0L1 8z"/><path d="M4 11c4-3 12-3 16 0l-2 2c-3-2-9-2-12 0L4 11z"/><circle cx="12" cy="17" r="2"/></svg>' +
-        '<svg viewBox="0 0 24 24"><path d="M5 12h2l2-6 3 12 2-6h2"/></svg>' +
-        '<svg viewBox="0 0 24 24"><rect x="2" y="7" width="17" height="10" rx="2"/><path d="M22 10v4"/></svg>' +
-      '</span>';
-  }
-
   /* bottom nav (only on main tab pages) */
   var nav = document.getElementById('bottomnav');
   if(nav){
@@ -85,8 +95,8 @@ function bootShell(){
     fab.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 4v5c0 4.5-3 8-7 9-4-1-7-4.5-7-9V7l7-4z"/></svg>';
   }
 
-  /* language-selection screen has no floating buttons */
-  if(document.body.id === 'page-language'){
+  /* onboarding screens have no floating buttons */
+  if(document.body.id === 'page-language' || document.body.id === 'page-welcome'){
     var fw = document.querySelector('.fabwrap');
     if(fw) fw.style.display = 'none';
   }
@@ -96,6 +106,15 @@ function bootShell(){
 
 /* loads real data from the backend; when it arrives, re-renders the page in place */
 function initData(){
+  var start = Date.now();
+  var HIDDEN = false;
+  function finish(now){
+    if(HIDDEN) return;
+    HIDDEN = true;
+    var wait = now ? 0 : (3000 - (Date.now() - start));
+    if(wait > 0){ setTimeout(hideSplash, wait); } else { hideSplash(); }
+  }
+  setTimeout(finish, 3500);
   try{
     var xhr = new XMLHttpRequest();
     xhr.open('GET', '/api/bootstrap', true);
@@ -112,15 +131,21 @@ function initData(){
           if(d.notifications){ NOTIFS = d.notifications.map(function(n){
             return {t:n.title, s:n.body, time:n.time, b:n.icon_bg, col:n.icon_col, unread:!!n.unread};
           }); used = true; }
+          if(d.events){ EVENTS = d.events.map(function(e){
+            return {t:e.title, cat:e.category, c:e.cat_class, d:e.date, venue:e.venue, time:e.time, s:e.summary, poster:e.poster || ''};
+          }); used = true; }
           if(d.opd){ OPD = d.opd; used = true; }
           if(d.emergency){ EMERGENCY = d.emergency; used = true; }
           if(used) runPageInit();
         }catch(e){}
       }
+      finish();
     };
+    xhr.onerror = finish;
+    xhr.ontimeout = finish;
     xhr.timeout = 3000;
     xhr.send();
-  }catch(e){}
+  }catch(e){ finish(true); }
 }
 
 function initEmergency(){
@@ -139,8 +164,13 @@ function initLanguage(){
   setTimeout(function(){ c.classList.add('show'); }, 1500);
 }
 
+function startOnboarding(){
+  location.href = 'language.html';
+}
+
 function pickLang(code){
   setLang(code);
+  setOnboard();
   location.href = 'index.html';
 }
 
@@ -181,6 +211,7 @@ function runPageInit(){
     case 'page-doctor':      renderDocProfile(); break;
     case 'page-opd':         renderOpd(); break;
     case 'page-notices':     renderNotices('All'); break;
+    case 'page-events':      renderEvents(); break;
     case 'page-profile':     renderProfile(); break;
     case 'page-admissions':  renderAdmissions(); break;
     case 'page-notifications': renderNotifs(); break;
@@ -205,13 +236,6 @@ function initHome(){
       '<h3>' + n.t + '</h3><div class="n-foot"><span class="readmore" onclick="event.stopPropagation();go(\'notices\')">Read more <svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span></div></div>';
   });
   if($('homeNotices')) $('homeNotices').innerHTML = html;
-
-  /* splash */
-  var sp = $('splash');
-  if(sp){
-    sp.classList.add('hide');
-    setTimeout(function(){ sp.style.display = 'none'; }, 1800);
-  }
 }
 
 /* problem chip → recommended department */
@@ -384,6 +408,37 @@ function filterNotice(cat, el){
 }
 function noticeCard(n){
   return '<div class="notice" onclick="go(\'notices\')"><div class="notice-top"><span class="cat ' + n.c + '">' + n.cat + '</span><span class="n-date">' + n.d + '</span></div><h3>' + n.t + '</h3><p>' + n.s + '</p></div>';
+}
+
+/* ---------- college events ---------- */
+function renderEvents(){
+  var el = $('eventsList');
+  if(!el) return;
+  var html = '';
+  EVENTS.forEach(function(e, i){
+    var poster = e.poster ? '<div class="ev-poster" onclick="shareEvent(' + i + ')"><img src="' + e.poster + '" alt="' + e.t + ' poster"></div>' : '';
+    var share = '<button class="share-btn" type="button" onclick="shareEvent(' + i + ')">' + icv('M12 2a5 5 0 0 0-5 5c0 .6.1 1.1.3 1.6L3.9 11a5 5 0 1 0 0 6l2.4 2a5 5 0 1 0 2.2-2.6l2.4-2a5 5 0 0 0 1.1 0l2.4 2A5 5 0 1 0 17.6 13l3.4-2.4A5 5 0 1 0 12 2z') + 'Share</button>';
+    html += '<div class="notice">' + poster +
+      '<div class="notice-top">' +
+      '<span class="cat ' + e.c + '">' + e.cat + '</span><span class="n-date">' + icv(ICONS.cal) + e.d + '</span></div>' +
+      '<h3>' + e.t + '</h3><p>' + e.s + '</p>' +
+      '<div class="n-foot"><span class="readmore">' + icv(ICONS.pin) + ' ' + e.venue + ' &bull; ' + e.time + '</span>' + share + '</div></div>';
+  });
+  el.innerHTML = html || emptyState('No events listed yet');
+}
+
+function shareEvent(i){
+  var e = EVENTS[i];
+  if(!e){ toast('Could not share this event.'); return; }
+  var text = e.t + '\n' + e.d + ' \u2022 ' + e.time + ' \u2022 ' + e.venue + (e.s ? '\n' + e.s : '');
+  var posterUrl = e.poster ? location.origin + e.poster : '';
+  if(window.navigator.share){
+    window.navigator.share({ title: e.t, text: text, url: posterUrl || (location.origin + '/events.html') })
+      .catch(function(){});
+  } else {
+    var q = encodeURIComponent(text + '\n' + 'View on the GMC app: ' + (location.origin + '/events.html'));
+    window.open('https://wa.me/?text=' + q, '_blank');
+  }
 }
 
 /* ============================================================

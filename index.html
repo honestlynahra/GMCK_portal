@@ -11,18 +11,18 @@
 </head>
 <body id="page-home" data-tab="home">
 <div class="frame">
-  <div class="statusbar" id="statusbar"></div>
+  <div id="splash">
+    <div class="splash-logo"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 4v5c0 4.5-3 8-7 9-4-1-7-4.5-7-9V7l7-4z"/></svg></div>
+    <div class="splash-title">GMC KOZHIKODE</div>
+    <div class="splash-sub">Government Medical College, Kozhikode</div>
+    <div class="splash-symbol">Healthcare &bull; Education &bull; Research</div>
+    <div class="splash-loader"></div>
+  </div>
   <main class="site-body" id="sitebody">
-    <div id="splash">
-      <div class="splash-logo"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 4v5c0 4.5-3 8-7 9-4-1-7-4.5-7-9V7l7-4z"/></svg></div>
-      <div class="splash-title">GMC KOZHIKODE</div>
-      <div class="splash-sub">Government Medical College, Kozhikode</div>
-      <div class="splash-symbol">Healthcare &bull; Education &bull; Research</div>
-      <div class="splash-loader"></div>
-    </div>
     <div class="greet-block">
       <div class="greet-top">
         <span class="grow"></span>
+        <a class="greet-admin" href="/admin/" title="Admin console">Admin login</a>
       </div>
       <div class="greet-title" id="greetHello">Welcome to GMC Kozhikode</div>
       <div class="greet-help">How can we help you?</div>
@@ -32,8 +32,6 @@
       <input placeholder="Search department, doctor or service" readonly>
     </a>
     <div class="spacer"></div>
-    <a class="emergency" href="emergency.html"><div class="em-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 4v5c0 4.5-3 8-7 9-4-1-7-4.5-7-9V7l7-4z"/></svg></div><div><div class="em-t">Emergency &amp; Trauma</div><div class="em-s">24 × 7 Emergency Services</div></div><div class="em-a"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div></a>
-    <div class="spacer"></div>
     <div class="sec"><h2>Quick Services</h2></div>
     <div class="grid2">
       <a class="svc" href="doctors.html"><div class="svc-ic" style="background:var(--primary-light);color:var(--primary)"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M8 2h8v6a4 4 0 0 1-8 0V2z"/><path d="M8 6h8M8 10c0-1 0-1 .5-2M16 10c0-1 0-1-.5-2"/></svg></div><div class="svc-t">Doctor's Directory</div></a>
@@ -41,6 +39,7 @@
       <a class="svc" href="departments.html"><div class="svc-ic" style="background:#F0EBFA;color:#6B4FA0"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V8l9-5 9 5v13M9 21v-6h6v6"/><path d="M3 3v3M21 3v3"/></svg></div><div class="svc-t">Departments</div></a>
       <a class="svc" href="navigation.html"><div class="svc-ic" style="background:#FDF1E3;color:#B7791F"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></div><div class="svc-t">Hospital Navigation</div></a>
       <a class="svc" href="admissions.html"><div class="svc-ic" style="background:#E8F6EF;color:#1E7A4D"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4v5c0 5-3.5 8.5-8 9-4.5-.5-8-4-8-9V7l8-4z"/><path d="M9 12l2 2 4-4"/></svg></div><div class="svc-t">Admissions</div></a>
+      <a class="svc" href="events.html"><div class="svc-ic" style="background:#FDEAF4;color:#C2255C"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-5v12L3 13v-2z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg></div><div class="svc-t">College Events</div></a>
     </div>
     <div class="sec"><h2>How can we help you?</h2></div>
     <div class="chips">

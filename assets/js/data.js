@@ -56,6 +56,16 @@ var NOTIFS = [
   {t:'Emergency announcement', s:'Emergency drill scheduled this week.', time:'3d ago', unread:false, b:'var(--danger-light)', col:'var(--danger)'}
 ];
 
+/* Sample/placeholder college events (mapped from /api/bootstrap events) */
+var EVENTS = [
+  {t:"Annual Medical Freshers' Fest", cat:'Cultural', c:'cat-adm', d:'12 Nov 2026', venue:'Main Auditorium', time:'5:00 PM', s:'Welcome cultural programme for the new first-year batch.', poster:''},
+  {t:'Research Colloquium', cat:'Academic', c:'cat-acad', d:'18 Nov 2026', venue:'Seminar Hall', time:'10:00 AM', s:'Postgraduate students and faculty present ongoing research work.', poster:''},
+  {t:'Health Awareness Camp', cat:'Community', c:'cat-emo', d:'25 Nov 2026', venue:'OPD Block', time:'9:00 AM', s:'Free screening and awareness sessions for the public.', poster:''},
+  {t:'Inter-College Sports Meet', cat:'Sports', c:'cat-exam', d:'5 Dec 2026', venue:'College Ground', time:'8:00 AM', s:'Annual sports meet across batches and participating colleges.', poster:''},
+  {t:'National Seminar on Public Health', cat:'Academic', c:'cat-acad', d:'12 Dec 2026', venue:'Convention Centre', time:'9:30 AM', s:'Guest lectures and panel discussions with invited speakers.', poster:''},
+  {t:'Arts Day', cat:'Cultural', c:'cat-adm', d:'20 Dec 2026', venue:'College Auditorium', time:'4:00 PM', s:'Student arts and cultural performances to close the year.', poster:''}
+];
+
 /* Problem-based (symptom) → department mapping */
 var PROBLEM_MAP = {
   'chest pain':'Cardiology','chest':'Cardiology','heart':'Cardiology','cardiac':'Cardiology',
