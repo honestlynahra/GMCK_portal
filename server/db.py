@@ -6,6 +6,7 @@ SQLite file so the app still runs with `python server/app.py`.
 import json
 import os
 import sqlite3
+import tempfile
 
 from werkzeug.security import generate_password_hash
 
@@ -20,7 +21,11 @@ except ImportError:  # pragma: no cover - psycopg2 only needed in production
 
 SERVER_DIR = os.path.dirname(os.path.abspath(__file__))
 SITE_DIR = os.path.abspath(os.path.join(SERVER_DIR, ".."))
-DATA_DIR = os.path.join(SERVER_DIR, "data")
+_ON_VERCEL = bool(os.environ.get("VERCEL"))
+if _ON_VERCEL and not (os.environ.get("DATABASE_URL") or "").strip():
+    DATA_DIR = os.path.join(tempfile.gettempdir(), "gmc_data")
+else:
+    DATA_DIR = os.path.join(SERVER_DIR, "data")
 DB_PATH = os.path.join(DATA_DIR, "gmc.db")
 SQLITE_SCHEMA = os.path.join(SERVER_DIR, "schema.sql")
 PG_SCHEMA = os.path.join(SERVER_DIR, "schema_pg.sql")
