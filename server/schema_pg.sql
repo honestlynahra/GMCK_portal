@@ -1,18 +1,17 @@
--- GMC KOZHIKODE — SQLite schema (v1)
-PRAGMA journal_mode = WAL;
+-- GMC KOZHIKODE — PostgreSQL schema (for Vercel + Neon)
 
 CREATE TABLE IF NOT EXISTS users(
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id SERIAL PRIMARY KEY,
   username TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
   role TEXT NOT NULL DEFAULT 'admin',
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  created_at TEXT NOT NULL DEFAULT (to_char(now() at time zone 'utc', 'YYYY-MM-DD HH24:MI:SS'))
 );
 
 CREATE TABLE IF NOT EXISTS departments(
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id SERIAL PRIMARY KEY,
   name TEXT NOT NULL UNIQUE,
-  desc TEXT NOT NULL DEFAULT '',
+  "desc" TEXT NOT NULL DEFAULT '',
   cat TEXT NOT NULL DEFAULT 'Clinical',
   loc TEXT NOT NULL DEFAULT '',
   opd TEXT NOT NULL DEFAULT 'Sample timing',
@@ -20,7 +19,7 @@ CREATE TABLE IF NOT EXISTS departments(
 );
 
 CREATE TABLE IF NOT EXISTS doctors(
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id SERIAL PRIMARY KEY,
   name TEXT NOT NULL,
   des TEXT NOT NULL DEFAULT '',
   dept TEXT NOT NULL DEFAULT '',
@@ -28,7 +27,7 @@ CREATE TABLE IF NOT EXISTS doctors(
 );
 
 CREATE TABLE IF NOT EXISTS notices(
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id SERIAL PRIMARY KEY,
   title TEXT NOT NULL,
   category TEXT NOT NULL DEFAULT 'Hospital',
   cat_class TEXT NOT NULL DEFAULT 'cat-hosp',
@@ -37,7 +36,7 @@ CREATE TABLE IF NOT EXISTS notices(
 );
 
 CREATE TABLE IF NOT EXISTS opd(
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id SERIAL PRIMARY KEY,
   dept TEXT NOT NULL DEFAULT 'Cardiology',
   day TEXT NOT NULL DEFAULT 'Monday',
   session TEXT NOT NULL DEFAULT 'Morning',
@@ -46,7 +45,7 @@ CREATE TABLE IF NOT EXISTS opd(
 );
 
 CREATE TABLE IF NOT EXISTS notifications(
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id SERIAL PRIMARY KEY,
   title TEXT NOT NULL,
   body TEXT NOT NULL DEFAULT '',
   icon_bg TEXT NOT NULL DEFAULT 'var(--primary-light)',
@@ -56,7 +55,7 @@ CREATE TABLE IF NOT EXISTS notifications(
 );
 
 CREATE TABLE IF NOT EXISTS events(
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id SERIAL PRIMARY KEY,
   title TEXT NOT NULL,
   category TEXT NOT NULL DEFAULT 'Academic',
   cat_class TEXT NOT NULL DEFAULT 'cat-acad',
@@ -69,25 +68,26 @@ CREATE TABLE IF NOT EXISTS events(
 
 CREATE TABLE IF NOT EXISTS posters(
   event_id INTEGER PRIMARY KEY,
-  data BLOB NOT NULL,
+  data BYTEA NOT NULL,
   ext TEXT NOT NULL DEFAULT '.png'
 );
 
 CREATE TABLE IF NOT EXISTS appointments(
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id SERIAL PRIMARY KEY,
   name TEXT NOT NULL,
   phone TEXT NOT NULL DEFAULT '',
   department TEXT NOT NULL DEFAULT '',
   preferred_date TEXT NOT NULL DEFAULT '',
   message TEXT NOT NULL DEFAULT '',
   status TEXT NOT NULL DEFAULT 'new',
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  created_at TEXT NOT NULL DEFAULT (to_char(now() at time zone 'utc', 'YYYY-MM-DD HH24:MI:SS'))
 );
 
 CREATE TABLE IF NOT EXISTS emergency_settings(
   id INTEGER PRIMARY KEY CHECK (id = 1),
   phone TEXT NOT NULL DEFAULT '(Placeholder)',
   helpdesk TEXT NOT NULL DEFAULT 'Main entrance, Ground Floor',
-  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  updated_at TEXT NOT NULL DEFAULT (to_char(now() at time zone 'utc', 'YYYY-MM-DD HH24:MI:SS'))
 );
-INSERT OR IGNORE INTO emergency_settings(id, phone) VALUES (1, '(Placeholder — set official number)');
+
+INSERT INTO emergency_settings(id, phone) VALUES (1, '(Placeholder — set official number)') ON CONFLICT (id) DO NOTHING;

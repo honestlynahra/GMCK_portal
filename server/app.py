@@ -8,40 +8,48 @@ Serves the static site and provides a JSON API:
 
 Run:  python app.py    -> http://127.0.0.1:5000
 """
+import datetime
+import io
 import json
 import os
 import secrets
-import sqlite3
 
-from flask import Flask, g, jsonify, request, send_from_directory, session
+from flask import Flask, Response, g, jsonify, request, send_from_directory, session
 from werkzeug.security import check_password_hash, generate_password_hash
-from werkzeug.utils import secure_filename
+
+try:
+    from server import db as dbm
+except ImportError:
+    import db as dbm
 
 SERVER = os.path.dirname(os.path.abspath(__file__))
 SITE = os.path.abspath(os.path.join(SERVER, ".."))
-DB_PATH = os.path.join(SERVER, "data", "gmc.db")
 KEY_FILE = os.path.join(SERVER, ".secret_key")
-POSTER_DIR = os.path.join(SITE, "assets", "img", "events")
 ALLOWED_IMAGE_EXT = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
+IMAGE_MIME = {
+    ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png",
+    ".webp": "image/webp", ".gif": "image/gif",
+}
 
 app = Flask(__name__, static_folder=None)
-if os.path.exists(KEY_FILE):
-    with open(KEY_FILE) as f:
-        app.secret_key = f.read().strip()
-else:
-    secret = secrets.token_hex(32)
-    with open(KEY_FILE, "w") as f:
-        f.write(secret)
-    app.secret_key = secret
+app.secret_key = (os.environ.get("SECRET_KEY") or "").strip()
+if not app.secret_key:
+    if os.path.exists(KEY_FILE):
+        with open(KEY_FILE) as f:
+            app.secret_key = f.read().strip()
+    else:
+        app.secret_key = secrets.token_hex(32)
+        try:
+            with open(KEY_FILE, "w") as f:
+                f.write(app.secret_key)
+        except OSError:
+            pass
 
 
 # ---------------------------------------------------------------- db helpers
 def get_db():
     if "db" not in g:
-        con = sqlite3.connect(DB_PATH)
-        con.row_factory = sqlite3.Row
-        con.execute("PRAGMA foreign_keys = ON")
-        g.db = con
+        g.db = dbm.DB(dbm.get_conn())
     return g.db
 
 
@@ -225,11 +233,14 @@ def admin_list_create(res):
                     d["services"] = []
         return jsonify(rows)
     data = _clean(request.get_json(silent=True) or {}, cols)
+    cols_sql = ", ".join(dbm.ident(c) for c in cols)
     placeholders = ", ".join("?" * len(cols))
-    db.execute(f"INSERT INTO {table} ({', '.join(cols)}) VALUES ({placeholders})",
-               [data[c] for c in cols])
+    row = db.execute(
+        f"INSERT INTO {table} ({cols_sql}) VALUES ({placeholders}) RETURNING id",
+        [data[c] for c in cols],
+    ).fetchone()
     db.commit()
-    return jsonify({"ok": True, "id": db.execute("SELECT last_insert_rowid()").fetchone()[0]}), 201
+    return jsonify({"ok": True, "id": row["id"]}), 201
 
 
 @app.route("/api/admin/<res>/<int:rid>", methods=["PUT", "DELETE"])
@@ -244,7 +255,7 @@ def admin_update_delete(res, rid):
         db.commit()
         return jsonify({"ok": True})
     data = _clean(request.get_json(silent=True) or {}, cols)
-    sets = ", ".join(f"{c} = ?" for c in cols)
+    sets = ", ".join(f"{dbm.ident(c)} = ?" for c in cols)
     db.execute(f"UPDATE {table} SET {sets} WHERE id=?", [data[c] for c in cols] + [rid])
     db.commit()
     return jsonify({"ok": True})
@@ -279,30 +290,35 @@ def emergency_admin():
     if request.method == "GET":
         return jsonify(row_to_dict(db.execute("SELECT * FROM emergency_settings WHERE id=1").fetchone()))
     data = _clean(request.get_json(silent=True) or {}, ["phone", "helpdesk"])
-    db.execute("UPDATE emergency_settings SET phone=?, helpdesk=?, updated_at=datetime('now') WHERE id=1",
-               (data["phone"], data["helpdesk"]))
+    now = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    db.execute("UPDATE emergency_settings SET phone=?, helpdesk=?, updated_at=? WHERE id=1",
+               (data["phone"], data["helpdesk"], now))
     db.commit()
     return jsonify({"ok": True})
+
+
+@app.route("/api/events/<int:eid>/poster")
+def get_event_poster(eid):
+    row = get_db().execute("SELECT data, ext FROM posters WHERE event_id=?", (eid,)).fetchone()
+    if not row:
+        return jsonify({"error": "Not found"}), 404
+    mime = IMAGE_MIME.get((row["ext"] or "").lower(), "application/octet-stream")
+    resp = Response(bytes(row["data"]), mimetype=mime)
+    resp.headers["Cache-Control"] = "no-cache"
+    return resp
 
 
 @app.route("/api/admin/events/<int:eid>/poster", methods=["POST", "DELETE"])
 @login_required
 def upload_event_poster(eid):
     db = get_db()
-    row = db.execute("SELECT poster FROM events WHERE id=?", (eid,)).fetchone()
+    row = db.execute("SELECT id FROM events WHERE id=?", (eid,)).fetchone()
     if not row:
         return jsonify({"error": "Event not found"}), 404
     if request.method == "DELETE":
-        cur = row["poster"] or ""
+        db.execute("DELETE FROM posters WHERE event_id=?", (eid,))
         db.execute("UPDATE events SET poster='' WHERE id=?", (eid,))
         db.commit()
-        if cur.startswith("/assets/img/events/"):
-            target = os.path.join(POSTER_DIR, os.path.basename(cur))
-            if os.path.isfile(target) and os.path.dirname(os.path.basename(cur)) == "":
-                try:
-                    os.remove(target)
-                except OSError:
-                    pass
         return jsonify({"ok": True})
     f = request.files.get("poster")
     if not f or not f.filename:
@@ -310,11 +326,12 @@ def upload_event_poster(eid):
     ext = os.path.splitext(f.filename)[1].lower()
     if ext not in ALLOWED_IMAGE_EXT:
         return jsonify({"error": "Only image files are allowed"}), 400
-    name = secure_filename(f.filename) or "poster"
-    os.makedirs(POSTER_DIR, exist_ok=True)
-    fname = f"{eid}_{name}"
-    f.save(os.path.join(POSTER_DIR, fname))
-    url = "/assets/img/events/" + fname
+    db.execute(
+        "INSERT INTO posters(event_id, data, ext) VALUES (?,?,?) "
+        "ON CONFLICT (event_id) DO UPDATE SET data=excluded.data, ext=excluded.ext",
+        (eid, bytes(f.read()), ext),
+    )
+    url = f"/api/events/{eid}/poster"
     db.execute("UPDATE events SET poster=? WHERE id=?", (url, eid))
     db.commit()
     return jsonify({"ok": True, "poster": url}), 201
@@ -358,7 +375,7 @@ def users_admin():
         db.execute("INSERT INTO users(username, password_hash, role) VALUES (?,?,?)",
                    (username, generate_password_hash(password), role))
         db.commit()
-    except sqlite3.IntegrityError:
+    except dbm.IntegrityError:
         return jsonify({"error": "Username already exists"}), 400
     return jsonify({"ok": True}), 201
 
